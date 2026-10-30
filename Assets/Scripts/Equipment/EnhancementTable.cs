@@ -15,14 +15,14 @@ public class EnhancemenetStepData
     [SerializeField] private float successChance = 100f;
 
     [Range(0f, 100f)]
-    [SerializeField] private float destructionChance = 100f;
+    [SerializeField] private float destructionChance = 0f;
 
     public int GoldCost => goldCost;
     public float SuccessChance => successChance;
     public float DestructionChance => destructionChance;
     public float FailureChance => 100f - successChance - destructionChance;
 
-    public bool IsValid => goldCost == 0
+    public bool IsValid => goldCost >= 0
         && successChance >= 0f && successChance <= 100f
         && destructionChance >= 0f && destructionChance <= 100f
         && successChance + destructionChance <= 100f;

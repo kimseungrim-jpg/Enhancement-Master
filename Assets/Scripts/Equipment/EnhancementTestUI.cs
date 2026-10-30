@@ -1,9 +1,10 @@
 using JetBrains.Annotations;
+using TMPro;
 using UnityEngine;
 
 /// <summary>
-/// Inspector에서 지정한 프리셋으로 테스트 장비 한 개를 만들고
-/// 버튼으로 강화 요청을 보내 결과를 Console에 표시한다.
+/// 테스트 장비와 지갑을 생성해 보관하고 버튼 입력을 통해 강화를 진행
+/// 강화 결과는 Console에, 보유 골드 현황은 연결된 text에 표시한다.
 /// </summary>
 public sealed class EnhancementTestUI : MonoBehaviour
 {
@@ -14,8 +15,14 @@ public sealed class EnhancementTestUI : MonoBehaviour
     [Range(0, EquipmentInstance.MaxEchancementLevel)]
     [SerializeField] private int startingLevel;
 
+    [Header("골드 테스트")]
+    [Min(0)][SerializeField] private int startingGold = 1000;
+    [Min(0)][SerializeField] private int goldToAdd = 500;
+    [SerializeField] private TMP_Text goldText;
+
     private EquipmentInstance equipment;
     private EnhancementService enhancementService;
+    private GoldWallet wallet;
 
     private void Awake()
     {
@@ -29,6 +36,9 @@ public sealed class EnhancementTestUI : MonoBehaviour
         // 처음 만든 장비를 보관하고 계속 같은 장비를 강화
         equipment = new EquipmentInstance(equipmentData, startingLevel);
         enhancementService = new EnhancementService();
+
+        wallet = new GoldWallet(startingGold);
+        RefreshGoldUI();
     }
 
     /// <summary>
@@ -45,7 +55,9 @@ public sealed class EnhancementTestUI : MonoBehaviour
 
         int previousLevle = equipment.EnhacementLevel;
 
-        EnhancementResult result = enhancementService.TryEnhance(equipment, enhancementTable);
+        EnhancementResult result = enhancementService.TryEnhance(equipment, enhancementTable, wallet);
+
+        RefreshGoldUI();
 
         if (result == EnhancementResult.NotAttempted)
         {
@@ -55,8 +67,44 @@ public sealed class EnhancementTestUI : MonoBehaviour
             return;
         }
 
+        if (result == EnhancementResult.InsufficientGold)
+        {
+            Debug.Log($"골드 부족: 현재 {wallet.Gold:N0} 골드", this);
+            return;
+        }
+
         Debug.Log($"{equipment.Data.DisplayName}: {result} | " +
             $"+{previousLevle} -> +{equipment.EnhacementLevel} | " +
-            $"파괴 여부: {equipment.IsDestroyed}", this);
+            $"파괴 여부: {equipment.IsDestroyed} | " + 
+            $"잔액: {wallet.Gold:N0}",
+            this);
+    }
+
+    /// <summary>
+    /// Inspector에서 골드 추가 버튼의 On Click에 연결하여 호출
+    /// 테스트 금액을 지급한 뒤 표시를 갱신
+    /// </summary>
+    public void OnAddGoldButtonClicked()
+    {
+        if (wallet == null)
+        {
+            Debug.Log("테스트 지갑이 생성되지 않았습니다.", this);
+            return;
+        }
+
+        wallet.AddGold(goldToAdd);
+        RefreshGoldUI();
+
+        Debug.Log($"골드 추가 후 잔액: {wallet.Gold:N0}", this);
+    }
+
+    /// <summary>
+    /// 초기화 및 각 버튼 처리 후 호출하여 현재 잔액을 표시
+    /// 지금은 이 UI에서만 골드가 바뀌므로 해당 시점에서 직접 갱신
+    /// </summary>
+    private void RefreshGoldUI()
+    {
+        if (goldText != null && wallet != null)
+            goldText.text = $"Gold: {wallet.Gold:N0}";
     }
 }
