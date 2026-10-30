@@ -6,15 +6,15 @@ using UnityEngine.Experimental.AI;
 /// 장비 한 개의 프리셋 참조, 현재 강화 단계와 파괴 여부를 관리
 /// 같은 프리셋을 사용하는 장비도 객체를 따로 만들면 각자의 강화 상태를 가진다.
 /// </summary>
-public class EquipmentInstance : MonoBehaviour
+public class EquipmentInstance
 {
     public const int MaxEchancementLevel = 25;
 
     public EquipmentData Data {get;}
-    public int EnchacementLevel { get; private set; }
+    public int EnhacementLevel { get; private set; }
     public bool IsDestroyed { get; private set; }
 
-    public bool CanEnhance => !IsDestroyed && EnchacementLevel < MaxEchancementLevel;
+    public bool CanEnhance => !IsDestroyed && EnhacementLevel < MaxEchancementLevel;
 
     /// <summary>
     /// new EquipmentInstance로 장비 객체를 만들 때 프리셋과 시작 강화 단계를 설정
@@ -34,7 +34,7 @@ public class EquipmentInstance : MonoBehaviour
         }
 
         Data = data;
-        EnchacementLevel = enhancementLevel;
+        EnhacementLevel = enhancementLevel;
         IsDestroyed = false;
     }
 
@@ -49,7 +49,7 @@ public class EquipmentInstance : MonoBehaviour
             return false;
         }
 
-        EnchacementLevel++;
+        EnhacementLevel++;
         return true;
     }
 

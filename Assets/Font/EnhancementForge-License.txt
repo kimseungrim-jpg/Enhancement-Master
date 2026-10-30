@@ -1,0 +1,32 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: baekmuk
+Upstream-Contact: http://kldp.net/baekmuk/
+Source: http://kldp.net/baekmuk/release/
+
+Files: *
+Copyright: 1986-2002, Kim Jeong-Hwan
+License: BAEKMUK-MIT-LIKE
+ Copyright (c) 1986-2002 Kim Jeong-Hwan
+ .
+ All rights reserved.
+ .
+ Permission to use, copy, modify and distribute this font is
+ hereby granted, provided that both the copyright notice and
+ this permission notice appear in all copies of the font,
+ derivative works or modified versions, and that the following
+ acknowledgement appear in supporting documentation:
+     Baekmuk Batang, Baekmuk Dotum, Baekmuk Gulim, and
+     Baekmuk Headline are registered trademarks owned by
+     Kim Jeong-Hwan.
+ .
+ 저작권자는 이 서체를 자유롭게 사용, 복사, 수정 및 배포할 수
+ 있도록 허가합니다. 단, 이 서체의 모든 사본, 파생물 및 수정본에는
+ 위의 저작권 문구와 본 허가 문구를 반드시 포함하여야 하며, 함께
+ 제공되는 문서에 다음과 같은 문구를 반드시 표시하여야 합니다:
+     백묵 바탕, 백묵 돋음, 백묵 굴림, 백묵 헤드라인은 김정환의
+     등록상표입니다.
+
+Files: debian/*
+Copyright: 2001-2014, Changwoo Ryu
+License: GPL-2+
+ See /usr/share/common-licenses/GPL-2 for the full license.

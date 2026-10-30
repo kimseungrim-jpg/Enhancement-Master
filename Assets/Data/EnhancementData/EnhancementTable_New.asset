@@ -1,0 +1,90 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08e51774d32ed5d4bb8393601f972e08, type: 3}
+  m_Name: EnhancementTable_New
+  m_EditorClassIdentifier: Assembly-CSharp::EnhancementTable
+  steps:
+  - goldCost: 0
+    successChance: 95
+    destructionChance: 0
+  - goldCost: 0
+    successChance: 93
+    destructionChance: 0
+  - goldCost: 0
+    successChance: 91
+    destructionChance: 0
+  - goldCost: 0
+    successChance: 89
+    destructionChance: 0
+  - goldCost: 0
+    successChance: 85
+    destructionChance: 0
+  - goldCost: 0
+    successChance: 90
+    destructionChance: 0.5
+  - goldCost: 0
+    successChance: 86
+    destructionChance: 0.5
+  - goldCost: 0
+    successChance: 82
+    destructionChance: 0.5
+  - goldCost: 0
+    successChance: 78
+    destructionChance: 0.5
+  - goldCost: 0
+    successChance: 71
+    destructionChance: 0.5
+  - goldCost: 0
+    successChance: 80
+    destructionChance: 1.5
+  - goldCost: 0
+    successChance: 75
+    destructionChance: 1.5
+  - goldCost: 0
+    successChance: 70
+    destructionChance: 1.6
+  - goldCost: 0
+    successChance: 65
+    destructionChance: 1.7
+  - goldCost: 0
+    successChance: 60
+    destructionChance: 1.8
+  - goldCost: 0
+    successChance: 70
+    destructionChance: 2.5
+  - goldCost: 0
+    successChance: 62.5
+    destructionChance: 2.7
+  - goldCost: 0
+    successChance: 55
+    destructionChance: 2.9
+  - goldCost: 0
+    successChance: 42.5
+    destructionChance: 3.3
+  - goldCost: 0
+    successChance: 32.5
+    destructionChance: 5
+  - goldCost: 0
+    successChance: 33
+    destructionChance: 7
+  - goldCost: 0
+    successChance: 20
+    destructionChance: 9
+  - goldCost: 0
+    successChance: 10
+    destructionChance: 100
+  - goldCost: 0
+    successChance: 5
+    destructionChance: 11
+  - goldCost: 0
+    successChance: 1
+    destructionChance: 15
