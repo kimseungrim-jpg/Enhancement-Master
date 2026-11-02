@@ -23,16 +23,11 @@ public sealed class EnhancementService
     /// EnhancementTestUI의 강화 버튼 함수에서 호출
     /// 강화할 수 있으면 현재 단계의 설정으로 판정하고 결과를 반영
     /// </summary>
-    public EnhancementResult TryEnhance(EquipmentInstance equipment, EnhancementTable table, GoldWallet wallet)
+    public EnhancementResult TryEnhance(EquipmentInstance equipment, GoldWallet wallet)
     {
         if (equipment == null)
         {
             throw new ArgumentNullException(nameof(equipment));
-        }
-
-        if (table == null)
-        {
-            throw new ArgumentNullException(nameof(table));
         }
 
         if (wallet == null)
@@ -43,6 +38,13 @@ public sealed class EnhancementService
         //강화 불가는 확률 판정에 따른 일반 실패와 구분
         if(!equipment.CanEnhance)
             return EnhancementResult.NotAttempted;
+
+        EnhancementTable table = equipment.Data.EnhancementTable;
+
+        if (table == null)
+        {
+            throw new InvalidOperationException($"{equipment.Data.DisplayName}: 장비 SO에 강화표를 지정하세요.");
+        }
 
         EnhancemenetStepData step = table.GetStep(equipment.EnhacementLevel);
 

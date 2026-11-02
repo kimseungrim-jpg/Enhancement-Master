@@ -1,6 +1,4 @@
 using System;
-using UnityEngine;
-using UnityEngine.Experimental.AI;
 
 /// <summary>
 /// 장비 한 개의 프리셋 참조, 현재 강화 단계와 파괴 여부를 관리

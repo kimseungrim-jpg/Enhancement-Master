@@ -81,10 +81,10 @@ MonoBehaviour:
     destructionChance: 9
   - goldCost: 11000
     successChance: 10
-    destructionChance: 100
+    destructionChance: 15
   - goldCost: 15000
     successChance: 5
-    destructionChance: 11
+    destructionChance: 17.5
   - goldCost: 20000
     successChance: 1
-    destructionChance: 15
+    destructionChance: 20

@@ -17,3 +17,4 @@ MonoBehaviour:
   equipmentType: 0
   icon: {fileID: 0}
   baseAttack: 10
+  enhancementTable: {fileID: 11400000, guid: 12b7fba99fb61b841b44ec6713dd2e7b, type: 2}
