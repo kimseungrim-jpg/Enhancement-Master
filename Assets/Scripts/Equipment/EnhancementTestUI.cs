@@ -26,6 +26,10 @@ public sealed class EnhancementTestUI : MonoBehaviour
     [SerializeField] private TMP_Text selectedEquipmentText;
     [SerializeField] private TMP_Text resultText;
 
+    [Header("의뢰 테스트")]
+    [SerializeField] private CommissionTestUI commissionUI;
+    private bool CommissionBlocksActions => commissionUI != null && commissionUI.BlocksInventoryAction;
+
     private EquipmentInventory inventory;
     private EnhancementService enhancementService;
     private GoldWallet wallet;
@@ -56,6 +60,9 @@ public sealed class EnhancementTestUI : MonoBehaviour
         wallet = new GoldWallet(startingGold);
 
         RefreshUI();
+
+        if (commissionUI != null)
+            commissionUI.Initialize(this, inventory, wallet);
     }
 
     /// <summary>
@@ -64,6 +71,8 @@ public sealed class EnhancementTestUI : MonoBehaviour
     /// </summary>
     public void OnCreateEquipmentButtonClicked()
     {
+        if (CommissionBlocksActions) return;
+
         if (inventory == null) return;
 
         if (equipmentData == null || equipmentData.EnhancementTable == null)
@@ -95,6 +104,8 @@ public sealed class EnhancementTestUI : MonoBehaviour
             return;
         }
 
+        if (commissionUI != null && commissionUI.HandleSlotClick(inventory.GetEquipment(slotIndex))) return;
+
         selectedSlotIndex = inventory.GetEquipment(slotIndex) == null ? -1 : slotIndex;
 
         ShowMessage(selectedSlotIndex < 0 ? "선택을 해제했습니다." : "장비를 선택했습니다.");
@@ -108,6 +119,8 @@ public sealed class EnhancementTestUI : MonoBehaviour
     /// </summary>
     public void OnEnhanceButtonClicked()
     {
+        if (CommissionBlocksActions) return;
+
         if (inventory == null) return;
 
         EquipmentInstance equipment = SelectedEquipment;
@@ -134,6 +147,10 @@ public sealed class EnhancementTestUI : MonoBehaviour
                 ShowMessage("장비가 파괴되었습니다.");
                 break;
 
+            case EnhancementResult.InsufficientGold:
+                ShowMessage("골드가 부족합니다.");
+                break;
+
             case EnhancementResult.NotAttempted:
                 ShowMessage(equipment.IsDestroyed ? "파괴된 장비입니다." : "최대 강화 단계입니다.");
                 break;
@@ -148,6 +165,8 @@ public sealed class EnhancementTestUI : MonoBehaviour
     /// </summary>
     public void OnRemoveSelectedButtonClicked()
     {
+        if (CommissionBlocksActions) return;
+
         if (inventory == null) return;
 
         if (SelectedEquipment == null)
@@ -173,11 +192,22 @@ public sealed class EnhancementTestUI : MonoBehaviour
     /// </summary>
     public void OnAddGoldButtonClicked()
     {
+        if (CommissionBlocksActions) return;
+
         if (wallet == null) return;
 
         wallet.AddGold(goldToAdd);
 
         ShowMessage($"{goldToAdd:N0} 골드를 추가했습니다.");
+        RefreshUI();
+    }
+
+    /// <summary>
+    /// 회수된 장비를 선택한 채로 남기지 않고 슬롯과 잔액을 갱신
+    /// </summary>
+    public void RefreshAfterCommissionChange()
+    {
+        selectedSlotIndex = -1;
         RefreshUI();
     }
 

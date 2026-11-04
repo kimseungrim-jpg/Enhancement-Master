@@ -74,6 +74,18 @@ public class EquipmentInventory
         return true;
     }
 
+
+    public int FindIndex(EquipmentInstance equipment)
+    {
+        if (equipment == null) return -1;
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (ReferenceEquals(slots[i], equipment)) return i;
+        }
+
+        return -1;
+    }
+
     /// <summary>
     /// 조회/제거 전에 호출하여 잘못 전달된 슬롯 번호를 확인한다.
     /// </summary>
