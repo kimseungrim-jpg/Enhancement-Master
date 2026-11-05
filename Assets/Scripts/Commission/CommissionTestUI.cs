@@ -28,7 +28,7 @@ public class CommissionTestUI : MonoBehaviour
     [SerializeField] private Button acceptBtn;
     [SerializeField] private Button submitBtn;
     [SerializeField] private Button abandonBtn;
-    [SerializeField] private Button cancleSelecrtionBtn;
+    [SerializeField] private Button cancleSelectionBtn;
     [SerializeField] private TMP_Text messageText;
 
     [Header("제출 확인 팝업")]
@@ -47,10 +47,10 @@ public class CommissionTestUI : MonoBehaviour
     public void Initialize(EnhancementTestUI owner, EquipmentInventory equipmentInventory, GoldWallet goldWallet)
     {
         if (commission != null) throw new InvalidOperationException("의뢰 UI가 이미 초기화되었습니다.");
-        if (owner != null || equipmentInventory == null || goldWallet == null) 
+        if (owner == null || equipmentInventory == null || goldWallet == null) 
             throw new ArgumentException("의뢰 UI에 인벤토리 UI, 인벤토리, 지갑이 필요합니다.");
         if (commissionWindow == null || commissionCard == null || acceptBtn == null || submitBtn == null ||
-            abandonBtn == null || cancleSelecrtionBtn == null || confirmationPopup == null || confirmationText == null)
+            abandonBtn == null || cancleSelectionBtn == null || confirmationPopup == null || confirmationText == null)
             throw new InvalidOperationException("CommissionTestUI의 참조를 확인해주세요.");
 
         if (transform.IsChildOf(commissionWindow.transform) || transform.IsChildOf(commissionCard.transform) ||
@@ -81,10 +81,11 @@ public class CommissionTestUI : MonoBehaviour
     /// 닫기 버튼 또는 Esc 입력 시 호출
     /// 닫기 버튼으로 종료시 제출 선택이 켜져있으면 제출 선택도 함께 취소
     /// </summary>
-    public void CloseWindowClicked()
+    public void OnCloseWindowClicked()
     {
         if (commission == null) return;
         ResetSubmissionSelection();
+        isWindowOpen = false;
         if (messageText != null) messageText.text = string.Empty;
         RefreshUI();
     }
@@ -93,6 +94,17 @@ public class CommissionTestUI : MonoBehaviour
     {
         if (commission == null || !isWindowOpen) return;
 
+        if (!Input.GetKeyDown(KeyCode.Escape)) return;
+
+        if (mode != SelectionMode.Normal)
+        {
+            OnCancleSelectionClicked();
+        }
+        else
+        {
+            OnCloseWindowClicked();
+        }
+
     }
 
     /// <summary>
@@ -100,7 +112,8 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     private void ResetSubmissionSelection()
     {
-
+        pendingEquipment = null;
+        mode = SelectionMode.Normal;
     }
 
     /// <summary>
@@ -109,7 +122,26 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     public void OnAcceptClicked()
     {
+        if (commission == null || !isWindowOpen || mode != SelectionMode.Normal) return;
+        CommissionAcceptResult result = commission.TryAccept(inventory, wallet);
+        switch (result)
+        {
+            case CommissionAcceptResult.Accepted:
+                ShowMessage("의뢰를 수락했습니다. 장비와 선금을 받았습니다.");
+                inventoryUI.RefreshAfterCommissionChange();
+                break;
+            case CommissionAcceptResult.InventoryFull:
+                ShowMessage("인벤토리가 가득 차서 수락할 수 없습니다.");
+                break;
+            case CommissionAcceptResult.GoldLimitReached:
+                ShowMessage("보유 골드 한도를 초과하여 선금을 받을 수 없습니다.");
+                break;
+            default:
+                ShowMessage("이미 수락했거나 완료한 의뢰입니다.");
+                break;
+        }
 
+        RefreshUI();
     }
 
     /// <summary>
@@ -118,7 +150,10 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     public void OnSubmitClicked()
     {
-
+        if (commission == null || !isWindowOpen || commission.State != CommissionState.InProgress) return;
+        mode = SelectionMode.ChoosingEquipment;
+        ShowMessage("제출할 장비를 인벤토리에서 선택하세요.");
+        RefreshUI();
     }
 
     /// <summary>
@@ -127,7 +162,20 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     public bool HandleSlotClick(EquipmentInstance equipment)
     {
-        return true; //임시 처리 제거하고 수정해야함
+        if (mode == SelectionMode.Normal) return false;
+        if (mode == SelectionMode.Confirming) return false;
+
+        if (!commission.CanSubmit(inventory, equipment))
+        {
+            ShowMessage("해당 장비는 의뢰를 충족하지 않습니다.");
+            return true;
+        }
+
+        pendingEquipment = equipment;
+        mode = SelectionMode.Confirming;
+        confirmationText.text = $"{equipment.Data.DisplayName} + {equipment.EnhacementLevel}\n제출하시겠습니까?";
+        RefreshUI();
+        return true;
     }
 
     /// <summary>
@@ -136,7 +184,13 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     public void OnConfirmYesClicked()
     {
-
+        if (commission == null || mode != SelectionMode.Confirming) return;
+        bool completed = commission.TryComplete(inventory, pendingEquipment);
+        pendingEquipment = null;
+        mode = completed ? SelectionMode.Normal : SelectionMode.ChoosingEquipment;
+        ShowMessage(completed ? "장비를 제출하여 의뢰를 완료했습니다." : "조건에 맞는 장비가 아닙니다. 다시 선택하세요");
+        inventoryUI.RefreshAfterCommissionChange();
+        RefreshUI();
     }
 
     /// <summary>
@@ -145,7 +199,11 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     public void OnConfirmNoClicked()
     {
-
+        if (mode != SelectionMode.Confirming) return;
+        pendingEquipment = null;
+        mode = SelectionMode.ChoosingEquipment;
+        ShowMessage("다른 장비를 선택하거나 제출 선택을 취소하세요.");
+        RefreshUI();
     }
 
     /// <summary>
@@ -154,7 +212,10 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     public void OnCancleSelectionClicked()
     {
-
+        if (commission == null || mode == SelectionMode.Normal) return;
+        ResetSubmissionSelection();
+        ShowMessage("제출 선택을 취소했습니다.");
+        RefreshUI();
     }
 
     /// <summary>
@@ -162,7 +223,21 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     private void RefreshUI()
     {
-
+        commissionWindow.SetActive(isWindowOpen);
+        bool active = commission.State == CommissionState.InProgress;
+        descriptionText.text = $"{commission.EquipmentData.DisplayName}\n" +
+            $"지급 +{commission.StartingLevel} / 목표 +{commission.TargetLevel}이상\n" +
+            $"선금 {commission.AdvanceGold:N0} 골드";
+        acceptBtn.gameObject.SetActive(commission.State == CommissionState.Available);
+        submitBtn.gameObject.SetActive(active);
+        submitBtn.interactable = mode == SelectionMode.Normal;
+        abandonBtn.gameObject.SetActive(active);
+        abandonBtn.interactable = false;
+        cancleSelectionBtn.gameObject.SetActive(mode == SelectionMode.ChoosingEquipment);
+        confirmationPopup.SetActive(isWindowOpen && mode == SelectionMode.Confirming);
+        if (mode == SelectionMode.Confirming)
+            confirmationPopup.transform.SetAsLastSibling();
+        commissionCard.SetActive(commission.State != CommissionState.Completed);
     }
 
     /// <summary>
@@ -171,7 +246,8 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     private void ShowMessage(string message)
     {
-
+        Debug.Log(message, this);
+        if (messageText != null) messageText.text = message;
     }
 
     /// <summary>
@@ -179,7 +255,10 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     private void OnDisable()
     {
-        
+        ResetSubmissionSelection();
+        isWindowOpen = false;
+        if(commissionWindow != null) commissionWindow.SetActive(false);
+        if(confirmationPopup != null) confirmationPopup.SetActive(false);
     }
 
     /// <summary>
@@ -187,6 +266,6 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
-        
+        if (commission != null) RefreshUI();
     }
 }
