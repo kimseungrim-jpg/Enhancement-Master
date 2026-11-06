@@ -8,6 +8,39 @@ public class GoldWallet
 {
     public int Gold { get; private set; }
 
+    public long Debt { get; private set; }
+
+    /// <summary>
+    /// 정산 처리에서 골드가 부족할 때 호출하여 빚을 누적
+    /// </summary>
+    public void AddDebt(long amount)
+    {
+        if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+        Debt = checked(Debt + amount);
+    }
+
+    /// <summary>
+    /// Commission.TryAbandon에서 장비 회수 전에 금액과 빚 누적 한도를 검사
+    /// </summary>
+    public bool CanSettle(long amount)
+    {
+        return amount >= 0 && (amount <= Gold || amount <= long.MaxValue - Debt);
+    }
+
+    /// <summary>
+    /// Commission.TryAbandon에서 포기를 확정할 때 호출
+    /// 잔액이 부족하면 골드는 보존하고 회수금 전액을 빚으로 추가
+    /// </summary>
+    public bool TrySettle(long amount)
+    {
+        if(!CanSettle(amount)) return false;
+        if (amount <= Gold)
+            Gold -= (int)amount;
+        else
+            AddDebt(amount);
+        return true;
+    }
+
     /// <summary>
     /// EnhancementTestUI.Awake에서 테스트 지갑을 만들 때 시작 골드를 설정
     /// </summary

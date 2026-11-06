@@ -19,12 +19,15 @@ public sealed class EnhancementTestUI : MonoBehaviour
     [Min(0)][SerializeField] private int startingGold = 1000;
     [Min(0)][SerializeField] private int goldToAdd = 500;
     [SerializeField] private TMP_Text goldText;
+    [SerializeField] private TMP_Text debtText;
 
     [Header("인벤토리와 강화칸")]
     [SerializeField] private TMP_Text[] slotTexts = new TMP_Text[InventorySize];
 
     [SerializeField] private TMP_Text selectedEquipmentText;
     [SerializeField] private TMP_Text resultText;
+
+    [SerializeField] private TMP_Text enhancementInfoText;
 
     [Header("의뢰 테스트")]
     [SerializeField] private CommissionTestUI commissionUI;
@@ -108,7 +111,9 @@ public sealed class EnhancementTestUI : MonoBehaviour
 
         selectedSlotIndex = inventory.GetEquipment(slotIndex) == null ? -1 : slotIndex;
 
-        ShowMessage(selectedSlotIndex < 0 ? "선택을 해제했습니다." : "장비를 선택했습니다.");
+        ShowMessage(selectedSlotIndex < 0 ? "선택을 해제했습니다." : commissionUI != null &&
+            commissionUI.IsGoldEquipment(SelectedEquipment) ? "의뢰목표 달성 장비입니다! 제출해주세요!" : 
+            "장비를 선택했습니다.");
 
         RefreshUI();
     }
@@ -154,6 +159,12 @@ public sealed class EnhancementTestUI : MonoBehaviour
             case EnhancementResult.NotAttempted:
                 ShowMessage(equipment.IsDestroyed ? "파괴된 장비입니다." : "최대 강화 단계입니다.");
                 break;
+        }
+
+        if (commissionUI != null && commissionUI.IsGoldEquipment(equipment))
+        {
+            string previous = resultText != null ? resultText.text : result.ToString();
+            ShowMessage(previous + "\n의뢰목표 달성한 장비입니다! 제출해주세요!");
         }
 
         RefreshUI();
@@ -231,8 +242,50 @@ public sealed class EnhancementTestUI : MonoBehaviour
             selectedEquipmentText.text = $"강화 대상: {GetEquipmentLabel(SelectedEquipment)}";
         }
 
+        RefreshEnhancementInfo();
+
         if (goldText != null)
-            goldText.text = $"골드: {wallet.Gold:N0}";
+            goldText.text = $"골드: {wallet.Gold:N0}" + (debtText == null ? $"빚: {wallet.Debt:N0}" :"");
+        if (debtText != null) debtText.text = $"빚: {wallet.Debt:N0}";
+    }
+
+    /// <summary>
+    /// 강화 정보 표시 RefreshUI에서 호출하여 다음 강화의 확률과 비용을 표시
+    /// 장비가 없거나 강화할 수 없는 상태라면 이전 장비의 수치 대신 안내를 표시한다.
+    /// </summary>
+    private void RefreshEnhancementInfo()
+    {
+        if (enhancementInfoText == null) return;
+
+        EquipmentInstance equipment = SelectedEquipment;
+        if (equipment == null)
+        {
+            enhancementInfoText.text = "";
+            return;
+        }
+
+        if (equipment.IsDestroyed)
+        {
+            enhancementInfoText.text = "파괴된 장비는 강화할 수 없습니다.";
+            return;
+        }
+
+        if (equipment.EnhacementLevel >= EquipmentInstance.MaxEchancementLevel)
+        {
+            enhancementInfoText.text = "최대 단계입니다.";
+            return;
+        }
+
+        EnhancementTable table = equipment.Data.EnhancementTable;
+        if (table == null)
+        {
+            enhancementInfoText.text = "장비 SO에 강화표가 없습니다.";
+            return;
+        }
+
+        EnhancemenetStepData step = table.GetStep(equipment.EnhacementLevel);
+        enhancementInfoText.text = $"성공: {step.SuccessChance:0.####}% 실패: {step.FailureChance:0.####}%\n" +
+            $"파괴: {step.DestructionChance:0.####}% 골드: {step.GoldCost:N0}G";
     }
 
     /// <summary>

@@ -30,6 +30,9 @@ public class EquipmentData : ScriptableObject
     [Header("강화 테이블")]
     [SerializeField] private EnhancementTable enhancementTable;
 
+    [Header("장비 기본 가격")]
+    [SerializeField] private int basePrice = 100;
+
     //다른 스크립트는 값을 읽기만 하고, 공통 설정은 프리셋의 Inspector에서 관리
     public string EquipmentId => equipmentId;
     public string DisplayName => displayName;
@@ -37,4 +40,5 @@ public class EquipmentData : ScriptableObject
     public Sprite Icon => icon;
     public int BaseAttack => baseAttack;
     public EnhancementTable EnhancementTable => enhancementTable;
+    public int BasePrice => basePrice;
 }

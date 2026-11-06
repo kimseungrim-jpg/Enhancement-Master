@@ -2,7 +2,6 @@ using UnityEngine;
 using System;
 using TMPro;
 using UnityEngine.UI;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// 테스트 의뢰의 버튼과 제출 선택/확인 팝업을 관리
@@ -41,6 +40,11 @@ public class CommissionTestUI : MonoBehaviour
     private EnhancementTestUI inventoryUI;
     private EquipmentInstance pendingEquipment;
     private SelectionMode mode;
+    private bool isAbandoning;
+    private AbandonmentQuset pendingQuote;
+
+    [Header("포기 항목")]
+    [SerializeField] private Button abandonWithoutEquipmentButton;
 
     public bool BlocksInventoryAction => mode != SelectionMode.Normal;
 
@@ -50,7 +54,8 @@ public class CommissionTestUI : MonoBehaviour
         if (owner == null || equipmentInventory == null || goldWallet == null) 
             throw new ArgumentException("의뢰 UI에 인벤토리 UI, 인벤토리, 지갑이 필요합니다.");
         if (commissionWindow == null || commissionCard == null || acceptBtn == null || submitBtn == null ||
-            abandonBtn == null || cancleSelectionBtn == null || confirmationPopup == null || confirmationText == null)
+            abandonBtn == null || cancleSelectionBtn == null || confirmationPopup == null || confirmationText == null
+            || descriptionText == null || abandonWithoutEquipmentButton == null)
             throw new InvalidOperationException("CommissionTestUI의 참조를 확인해주세요.");
 
         if (transform.IsChildOf(commissionWindow.transform) || transform.IsChildOf(commissionCard.transform) ||
@@ -113,6 +118,8 @@ public class CommissionTestUI : MonoBehaviour
     private void ResetSubmissionSelection()
     {
         pendingEquipment = null;
+        pendingQuote = null;
+        isAbandoning = false;
         mode = SelectionMode.Normal;
     }
 
@@ -150,10 +157,67 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     public void OnSubmitClicked()
     {
-        if (commission == null || !isWindowOpen || commission.State != CommissionState.InProgress) return;
+        if (commission == null || !isWindowOpen || commission.State != CommissionState.InProgress || mode != SelectionMode.Normal)
+            return;
+        isAbandoning = false;
         mode = SelectionMode.ChoosingEquipment;
         ShowMessage("제출할 장비를 인벤토리에서 선택하세요.");
         RefreshUI();
+    }
+
+    /// <summary>
+    /// 포기 버튼에서 호출하여 반환할 정상 장비 또는 흔적을 선택하게 한다.
+    /// </summary>
+    public void OnAbandonClicked()
+    {
+        if (commission == null || !isWindowOpen || mode != SelectionMode.Normal || commission.State != CommissionState.InProgress)
+            return;
+        isAbandoning = true;
+        mode = SelectionMode.ChoosingEquipment;
+        ShowMessage("반환할 장비/흔적을 선택하거나 '제출하지 않는다.'를 누르세요");
+        RefreshUI();
+    }
+
+    /// <summary>
+    /// 장비 없이 포기 버튼에서 호출하여 미반환 회수금을 미리 보여준다.
+    /// </summary>
+    public void OnAbandonWithoutEquipmentClicked()
+    {
+        if (!isAbandoning || mode != SelectionMode.ChoosingEquipment) return;
+        OpenAbandonmentConfirmation(null);
+    }
+
+    /// <summary>
+    /// 포기 대상 선택 후 호출
+    /// 확인 전에는 장비나 지갑을 변경하지 않는다.
+    /// </summary>
+    public void OpenAbandonmentConfirmation(EquipmentInstance equipment)
+    {
+        if (!commission.TryGetAbandonmentQuoto(inventory, wallet, equipment, out var quote))
+        {
+            ShowMessage("같은 종류의 장비 또는 흔적을 선택하세요. 완료 가능한 장비를 제출해 주세요.");
+            return;
+        }
+        pendingEquipment = equipment;
+        pendingQuote = quote;
+        mode = SelectionMode.Confirming;
+        string item = equipment == null ? "반환 없음" : equipment.IsDestroyed ? $"{equipment.Data.DisplayName} 흔적" :
+            $"{equipment.Data.DisplayName} +{equipment.EnhacementLevel}";
+        confirmationText.text = $"의뢰를 포기하시겠습니까? \n회수: {item}\n" +
+            $"총 회수금: {quote.RecoveryGold:N0}\n즉시 지불: {quote.PayGold:N0}\n" +
+            $"추가 빚: {quote.AddedDebt:N0}\n" +
+            (quote.AddedDebt > 0 ? "골드가 부족해 보유 골드를 유지하고 전액을 빚으로 기록합니다." : "");
+
+        RefreshUI();
+    }
+
+    /// <summary>
+    /// 처음 받은 장비인지와 관계없이 현재 제출할 수 있는 장비인지 검사
+    /// EnhancementTestUI가 장비 선택/강화 후 확인할 때 호출
+    /// </summary>
+    public bool IsGoldEquipment(EquipmentInstance equipment)
+    {
+        return commission != null && commission.CanSubmit(inventory, equipment);
     }
 
     /// <summary>
@@ -164,6 +228,14 @@ public class CommissionTestUI : MonoBehaviour
     {
         if (mode == SelectionMode.Normal) return false;
         if (mode == SelectionMode.Confirming) return false;
+
+        if (isAbandoning)
+        {
+            if (equipment == null) ShowMessage("빈 슬롯입니다. 제출 하지 않음 버튼을 이용하세요.");
+            else if (IsGoldEquipment(equipment)) ShowMessage("의뢰목표 달성한 장비입니다. 제출해주세요!");
+            else OpenAbandonmentConfirmation(equipment);
+            return true;
+        }
 
         if (!commission.CanSubmit(inventory, equipment))
         {
@@ -185,6 +257,19 @@ public class CommissionTestUI : MonoBehaviour
     public void OnConfirmYesClicked()
     {
         if (commission == null || mode != SelectionMode.Confirming) return;
+
+        if (isAbandoning)
+        {
+            bool abandoned = commission.TryAbandon(inventory, wallet, pendingEquipment, pendingQuote);
+            pendingEquipment = null;
+            pendingQuote = null;
+            if (abandoned) ResetSubmissionSelection();
+            ShowMessage(abandoned ? "의뢰를 포기하고 정산했습니다." : "인벤토리, 지갑 변경 또는 정산 한도를 초과했습니다. 다시 선택하세요");
+            inventoryUI.RefreshAfterCommissionChange();
+            RefreshUI();
+            return;
+        }
+
         bool completed = commission.TryComplete(inventory, pendingEquipment);
         pendingEquipment = null;
         mode = completed ? SelectionMode.Normal : SelectionMode.ChoosingEquipment;
@@ -232,7 +317,8 @@ public class CommissionTestUI : MonoBehaviour
         submitBtn.gameObject.SetActive(active);
         submitBtn.interactable = mode == SelectionMode.Normal;
         abandonBtn.gameObject.SetActive(active);
-        abandonBtn.interactable = false;
+        abandonBtn.interactable = mode == SelectionMode.Normal;
+        abandonWithoutEquipmentButton.gameObject.SetActive(active && isAbandoning && mode == SelectionMode.ChoosingEquipment);
         cancleSelectionBtn.gameObject.SetActive(mode == SelectionMode.ChoosingEquipment);
         confirmationPopup.SetActive(isWindowOpen && mode == SelectionMode.Confirming);
         if (mode == SelectionMode.Confirming)
