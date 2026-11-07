@@ -6,6 +6,8 @@ using UnityEngine;
 /// </summary>
 public class CanlendarUI : MonoBehaviour
 {
+    private static readonly string[] WeekdatLabels = { "월", "화", "수", "목", "금", "토", "일" };
+
     [SerializeField] private TMP_Text dayText;
 
     private readonly GameCanlendar calendar = new GameCanlendar();
@@ -41,6 +43,7 @@ public class CanlendarUI : MonoBehaviour
     /// </summary>
     private void RefreshDayText()
     {
-        dayText.text = $"DAY{calendar.CurrentDay}";
+        int day = calendar.DayOfWeekNumber;
+        dayText.text = $"Week{calendar.CurrentWeek}/Day{day}/{WeekdatLabels[day -1]}";
     }
 }
