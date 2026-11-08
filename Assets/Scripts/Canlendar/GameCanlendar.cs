@@ -1,11 +1,12 @@
-using UnityEngine;
-using UnityEngine.Rendering;
+using System;
 
 /// <summary>
 /// 현재 날짜를 보관하고 하루 단위로 진행
 /// </summary>
 public class GameCanlendar
 {
+    public event Action<int> DayChanged;
+
     private const int DaysPerWeek = 7;
 
     public int CurrentDay { get; private set; } = 1;

@@ -12,6 +12,9 @@ public class CanlendarUI : MonoBehaviour
 
     private readonly GameCanlendar calendar = new GameCanlendar();
 
+    public GameCanlendar Calendar => calendar;
+    public bool DayAdvanceBlocked { get; set; }
+
     /// <summary>
     /// 화면을 처음 열거나 다시 활성화하면 현재 날짜를 표시
     /// </summary>
@@ -32,7 +35,7 @@ public class CanlendarUI : MonoBehaviour
     /// </summary>
     public void OnEndDayClicked()
     {
-        if (dayText == null) return;
+        if (dayText == null || DayAdvanceBlocked) return;
 
         calendar.AdvanceDay();
         RefreshDayText();
