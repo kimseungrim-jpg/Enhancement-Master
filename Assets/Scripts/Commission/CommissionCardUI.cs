@@ -48,7 +48,7 @@ public sealed class CommissionCardUI : MonoBehaviour
     public void Render(bool canClick)
     {
         bool active = order.State == CommissionState.InProgress;
-        descriptionText.text = $"의뢰 #{Number}  {order.EquipmentData.DisplayName}\n지급 +{order.StartingLevel} / 목표 +{order.TargetLevel}\n선금 {order.AdvanceGold:N0} 골드";
+        descriptionText.text = $"의뢰   {order.EquipmentData.DisplayName}\n지급 +{order.StartingLevel} / 목표 +{order.TargetLevel}\n선금 {order.AdvanceGold:N0} 골드";
         if (active) descriptionText.text += $"\n수락: {order.AcceptedDay}일 / 마지막 제출: {order.ExpiryDay - 1}일";
         acceptBtn.gameObject.SetActive(!active);
         submitBtn.gameObject.SetActive(active);

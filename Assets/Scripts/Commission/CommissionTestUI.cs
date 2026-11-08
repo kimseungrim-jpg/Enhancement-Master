@@ -125,7 +125,7 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     public void OnOpenWindowClicked()
     {
-        if (DeadlineActive) return; // 만료 화면에서 일반 의뢰 버튼 입력을 막는다.
+        if (DeadlineActive) return; 
         if (commission == null) return;
         isWindowOpen = true;
         RefreshUI();
@@ -137,7 +137,7 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     public void OnCloseWindowClicked()
     {
-        if (DeadlineActive) return; // 만료 화면에서 일반 의뢰 버튼 입력을 막는다.
+        if (DeadlineActive) return;
         if (commission == null) return;
         ResetSubmissionSelection();
         isWindowOpen = false;
@@ -471,7 +471,7 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     private void OnCalendarDayChanged(int day)
     {
-        const string warning = "만료일이 내일인 의뢰가 있습니다.";
+        const string warning = "내일 만료인 의뢰가 있습니다.";
         var rows = new StringBuilder();
         long total = 0;
         int count = 0;
@@ -483,8 +483,9 @@ public class CommissionTestUI : MonoBehaviour
             {
                 count++;
                 total = checked(total + debt);
-                rows.AppendLine($"#{cards[order].Number} {order.EquipmentData.DisplayName}  +{order.StartingLevel} → +{order.TargetLevel}");
-                rows.AppendLine($"    추가된 빚: {debt:N0}G");
+                if (count > 1) rows.AppendLine();
+                rows.AppendLine($"{order.EquipmentData.DisplayName}  +{order.StartingLevel} → +{order.TargetLevel}");
+                rows.AppendLine($"추가된 빚: {debt:N0}G");
             }
             else if (order.TryMarkLastDayWarning(day)) warn = true;
         }
@@ -495,12 +496,13 @@ public class CommissionTestUI : MonoBehaviour
         {
             isWindowOpen = false;
             inventoryUI.RefreshAfterCommissionChange();
-            deadlineText.text = $"만료 의뢰 {count}건  ·  추가된 빚 합계 {total:N0}G\n\n" + rows.ToString().TrimEnd();
+            deadlineText.text = $"만료 의뢰 {count}건 추가된 빚 합계 {total:N0}G\n\n" + rows.ToString().TrimEnd();
             if (warn) deadlineText.text = warning + "\n\n" + deadlineText.text;
         }
         else deadlineText.text = warning;
         RefreshUI();
         SetDeadlineView(count > 0 ? DeadlineView.Result : DeadlineView.Warning);
+        noticeScroll.movementType = ScrollRect.MovementType.Clamped;
         Canvas.ForceUpdateCanvases();
         noticeScroll.StopMovement();
         noticeScroll.verticalNormalizedPosition = 1f;

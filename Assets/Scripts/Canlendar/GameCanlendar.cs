@@ -20,5 +20,7 @@ public class GameCanlendar
     public void AdvanceDay()
     {
         CurrentDay++;
+
+        DayChanged?.Invoke(CurrentDay);
     }
 }
