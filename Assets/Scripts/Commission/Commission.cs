@@ -1,7 +1,7 @@
 using System;
 
 public enum CommissionState { Available, InProgress, Completed, Abandoned, Expired }
-public enum CommissionAcceptResult { Accepted, NotAvailable, InventoryFull, GoldLimitReached }
+public enum CommissionAcceptResult { Accepted, NotAvailable, InventoryFull, GoldLimitReached, NotMonday }
 
 /// <summary>
 /// 의뢰 한 개의 조건과 진행 상태를 보관하고 수락/제출을 처리
@@ -10,6 +10,7 @@ public enum CommissionAcceptResult { Accepted, NotAvailable, InventoryFull, Gold
 public class Commission
 {
     private const int DurationDays = 7;
+    public static bool IsAcceptanceDay(int day) => day >= 1 && (day - 1) % DurationDays == 0;
     public int AcceptedDay { get; private set; } //수락일
     public int ExpiryDay { get; private set; } //만료일
     public bool WarningShown { get; private set; } //경고문
@@ -57,10 +58,12 @@ public class Commission
         if (wallet == null) throw new ArgumentNullException(nameof(wallet));
         if (State != CommissionState.Available) return CommissionAcceptResult.NotAvailable;
 
+        if (currentDay < 1) throw new ArgumentOutOfRangeException(nameof(currentDay));
+        if (!IsAcceptanceDay(currentDay)) return CommissionAcceptResult.NotMonday;
+
         if (AdvanceGold > int.MaxValue - wallet.Gold)
             return CommissionAcceptResult.GoldLimitReached;
 
-        if (currentDay < 1) throw new ArgumentOutOfRangeException(nameof(currentDay));
         int expiry = checked(currentDay + DurationDays);
         decimal[] costs = EnhancementExperctedCost.Build(EquipmentData);
         long maximum = checked((long)decimal.Round(EquipmentData.BasePrice + costs[StartingLevel] + AdvanceGold, 0, MidpointRounding.AwayFromZero));

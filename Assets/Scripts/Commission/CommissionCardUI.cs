@@ -45,14 +45,15 @@ public sealed class CommissionCardUI : MonoBehaviour
     /// <summary>
     /// 의뢰창을 갱신할 때 현재 상태에서 사용할 버튼과 마지막 제출일을 표시한다.
     /// </summary>
-    public void Render(bool canClick)
+    public void Render(bool canClick, int currentDay)
     {
         bool active = order.State == CommissionState.InProgress;
         descriptionText.text = $"의뢰   {order.EquipmentData.DisplayName}\n지급 +{order.StartingLevel} / 목표 +{order.TargetLevel}\n선금 {order.AdvanceGold:N0} 골드";
-        if (active) descriptionText.text += $"\n수락: {order.AcceptedDay}일 / 마지막 제출: {order.ExpiryDay - 1}일";
+        if (active) descriptionText.text += $"\n남은 제출일: {order.ExpiryDay - currentDay}일";
         acceptBtn.gameObject.SetActive(!active);
         submitBtn.gameObject.SetActive(active);
         abandonBtn.gameObject.SetActive(active);
-        acceptBtn.interactable = submitBtn.interactable = abandonBtn.interactable = canClick;
+        acceptBtn.interactable = canClick && Commission.IsAcceptanceDay(currentDay);
+        submitBtn.interactable = abandonBtn.interactable = canClick;
     }
 }

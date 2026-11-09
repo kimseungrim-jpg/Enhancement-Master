@@ -190,6 +190,9 @@ public class CommissionTestUI : MonoBehaviour
                 ShowMessage("의뢰를 수락했습니다. 장비와 선금을 받았습니다.");
                 inventoryUI.RefreshAfterCommissionChange();
                 break;
+            case CommissionAcceptResult.NotMonday: // [추가]
+                ShowMessage("의뢰는 월요일에만 수락할 수 있습니다.");
+                break;
             case CommissionAcceptResult.InventoryFull:
                 ShowMessage("인벤토리가 가득 차서 수락할 수 없습니다.");
                 break;
@@ -381,7 +384,7 @@ public class CommissionTestUI : MonoBehaviour
             Commission item = orders[i];
             var card = cards[item];
             if (item.State == CommissionState.Available || item.State == CommissionState.InProgress)
-                card.Render(mode == SelectionMode.Normal && !DeadlineActive);
+                card.Render(mode == SelectionMode.Normal && !DeadlineActive, calendarUI.Calendar.CurrentDay);
             else
             {
                 orders.RemoveAt(i);
@@ -493,7 +496,11 @@ public class CommissionTestUI : MonoBehaviour
             }
             else if (order.TryMarkLastDayWarning(day)) warn = true;
         }
-        if (count == 0 && !warn) return;
+        if (count == 0 && !warn)
+        {
+            RefreshUI();
+            return;
+        }
 
         ResetSubmissionSelection();
         if (count > 0)
@@ -525,7 +532,7 @@ public class CommissionTestUI : MonoBehaviour
     private void SetDeadlineView(DeadlineView next)
     {
         deadlineView = next;
-        foreach (var card in cards.Values) card.Render(mode == SelectionMode.Normal && !DeadlineActive);
+        foreach (var card in cards.Values) card.Render(mode == SelectionMode.Normal && !DeadlineActive, calendarUI.Calendar.CurrentDay);
         calendarUI.DayAdvanceBlocked = DeadlineActive;
         warningText.gameObject.SetActive(next == DeadlineView.Warning);
         noticeScroll.gameObject.SetActive(next == DeadlineView.Result);
