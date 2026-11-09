@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: bdc7b2798436c0d4494b8c45b92510cd
+guid: 1ac1612324f0c5741b5223698f4df6dd
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -65014673641535584
-    second: CancleBtn_0
+      213: 382625855849652682
+    second: ModalButtonRaised_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: CancleBtn_0
+      name: ModalButtonRaised_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 1063
-        height: 1068
+        width: 64
+        height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 0a78860bf75091ff0800000000000000
-      internalID: -65014673641535584
+      spriteID: ac16ccb403c5f4500800000000000000
+      internalID: 382625855849652682
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      CancleBtn_0: -65014673641535584
+      ModalButtonRaised_0: 382625855849652682
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

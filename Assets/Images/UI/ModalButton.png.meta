@@ -1,13 +1,10 @@
 fileFormatVersion: 2
-guid: ac7399858612fbd4fadd109bd8f6a0a0
+guid: cbecd34556bdcce46918de3903965073
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2502634649399516861
-    second: SettingBackground_0
-  - first:
-      213: -8666214193015852456
-    second: SettingBackground_1
+      213: -3656873326120037451
+    second: ModalButton_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -129,45 +126,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: SettingBackground_0
+      name: ModalButton_0
       rect:
         serializedVersion: 2
-        x: 58
-        y: 158
-        width: 1333
-        height: 781
+        x: 0
+        y: 0
+        width: 64
+        height: 32
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 34125ffbb0bd44dd0800000000000000
-      internalID: -2502634649399516861
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: SettingBackground_1
-      rect:
-        serializedVersion: 2
-        x: 480
-        y: 54
-        width: 16
-        height: 12
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 85277d56b1c6bb780800000000000000
-      internalID: -8666214193015852456
+      spriteID: 5b39308b51d204dc0800000000000000
+      internalID: -3656873326120037451
       vertices: []
       indices: 
       edges: []
@@ -176,7 +151,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 1d17f22afbc686347b85caee7297bad3
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -186,8 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      SettingBackground_0: -2502634649399516861
-      SettingBackground_1: -8666214193015852456
+      ModalButton_0: -3656873326120037451
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

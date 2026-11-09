@@ -438,6 +438,7 @@ public class CommissionTestUI : MonoBehaviour
     [SerializeField] private CanlendarUI calendarUI;
     [SerializeField] private GameObject deadlinePopup;
     [SerializeField] private TMP_Text deadlineText;
+    [SerializeField] private TMP_Text warningText;
     [SerializeField] private Button noticeClose;
     [SerializeField] private ScrollRect noticeScroll;
     private DeadlineView deadlineView;
@@ -448,6 +449,9 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     private void ValidateDeadlineUI()
     {
+        if (!warningText || warningText == deadlineText ||
+            (noticeScroll && warningText.transform.IsChildOf(noticeScroll.transform)))
+            throw new InvalidOperationException("Warning Text에는 정산 스크롤 밖의 별도 TMP 텍스트를 연결하세요.");
         if (!calendarUI || !deadlinePopup || !deadlineText || !noticeClose || !noticeScroll ||
             !noticeScroll.content || !noticeScroll.verticalScrollbar)
             throw new InvalidOperationException("달력, 팝업 본문, 닫기 버튼, ScrollRect의 Content와 세로 Scrollbar를 연결하세요.");
@@ -499,9 +503,10 @@ public class CommissionTestUI : MonoBehaviour
             deadlineText.text = $"만료 의뢰 {count}건 추가된 빚 합계 {total:N0}G\n\n" + rows.ToString().TrimEnd();
             if (warn) deadlineText.text = warning + "\n\n" + deadlineText.text;
         }
-        else deadlineText.text = warning;
+        else warningText.text = warning;
         RefreshUI();
         SetDeadlineView(count > 0 ? DeadlineView.Result : DeadlineView.Warning);
+        if (count == 0) return;
         noticeScroll.movementType = ScrollRect.MovementType.Clamped;
         Canvas.ForceUpdateCanvases();
         noticeScroll.StopMovement();
@@ -522,6 +527,8 @@ public class CommissionTestUI : MonoBehaviour
         deadlineView = next;
         foreach (var card in cards.Values) card.Render(mode == SelectionMode.Normal && !DeadlineActive);
         calendarUI.DayAdvanceBlocked = DeadlineActive;
+        warningText.gameObject.SetActive(next == DeadlineView.Warning);
+        noticeScroll.gameObject.SetActive(next == DeadlineView.Result);
         deadlinePopup.SetActive(DeadlineActive);
         if (DeadlineActive) deadlinePopup.transform.SetAsLastSibling();
         noticeClose.gameObject.SetActive(DeadlineActive);
