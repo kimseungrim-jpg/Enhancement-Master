@@ -6,12 +6,22 @@ using TMPro;
 using UnityEngine.UI;
 
 /// <summary>
-/// 테스트 의뢰의 버튼과 제출 선택/확인 팝업을 관리
+/// 월요일에 의뢰를 게시하고 두 탭의 카드와 제출/포기/만료 팝업을 관리
 /// 인벤토리와 지갑은 EnhancementTestUI가 만든 객채를 같이 사용한다.
 /// </summary>
 public class CommissionTestUI : MonoBehaviour
 {
     private enum SelectionMode { Normal, ChoosingEquipment, Confirming }
+
+    private enum BoardTab { InProgress, Available }
+    private BoardTab tab;
+    private int lastPostedDay;
+    private bool initialized;
+
+    [Header("의뢰 목록 탭")]
+    [SerializeField] private Button inProgressTabButton;
+    [SerializeField] private Button availableTabButton;
+    [SerializeField] private TMP_Text emptyListText;
 
     [Header("테스트 의뢰 조건")]
     [SerializeField] private EquipmentData equipmentData;
@@ -68,7 +78,7 @@ public class CommissionTestUI : MonoBehaviour
 
     public void Initialize(EnhancementTestUI owner, EquipmentInventory equipmentInventory, GoldWallet goldWallet)
     {
-        if (commission != null) throw new InvalidOperationException("의뢰 UI가 이미 초기화되었습니다.");
+        if (initialized) throw new InvalidOperationException("의뢰 UI가 이미 초기화되었습니다.");
         if (owner == null || equipmentInventory == null || goldWallet == null)
             throw new ArgumentException("의뢰 UI에 인벤토리 UI, 인벤토리, 지갑이 필요합니다.");
         if (commissionWindow == null || cardPrefab == null || orderScroll == null || orderScroll.content == null ||
@@ -80,32 +90,107 @@ public class CommissionTestUI : MonoBehaviour
             transform.IsChildOf(confirmationPopup.transform))
             throw new InvalidOperationException("CommissionTestUI가 비활성 오브젝트에 붙어있습니다.");
 
+        if (!inProgressTabButton || !availableTabButton || inProgressTabButton == availableTabButton || !emptyListText)
+            throw new InvalidOperationException("진행 중·수락 가능 버튼과 빈 목록 안내 텍스트를 연결하세요.");
+
         ValidateDeadlineUI();
         inventoryUI = owner;
         inventory = equipmentInventory;
         wallet = goldWallet;
-        commission = new Commission(equipmentData, startingLevel, targetLevel, advanceGold);
-        orders.Add(commission);
-        if (extraOrders != null)
-            foreach (var settings in extraOrders)
-            {
-                if (orders.Count >= MaxOrders) break;
-                if (settings == null || settings.equipment == null)
-                    throw new InvalidOperationException("Extra Orders의 각 항목에 장비를 지정하세요.");
-                orders.Add(new Commission(settings.equipment, settings.start, settings.target, settings.advance));
-            }
 
-        for (int i = 0; i < orders.Count; i++)
-        {
-            var card = Instantiate(cardPrefab, orderScroll.content);
-            card.Bind(this, orders[i], i + 1);
-            cards.Add(orders[i], card);
-        }
+        SyncWeeklyOffers(calendarUI.Calendar.CurrentDay);
+        initialized = true;
+        inProgressTabButton.onClick.AddListener(OpenProgressTab);
+        availableTabButton.onClick.AddListener(OpenAvailableTab);
         mode = SelectionMode.Normal;
+
         if (isActiveAndEnabled) ConnectCalendar();
         SetDeadlineView(DeadlineView.None);
         isWindowOpen = false;
         RefreshUI();
+    }
+
+    /// <summary>
+    /// 초기화 또는 날짜 변경 시 호출
+    /// 월요일에는 한 번만 게시하고 다른 날에는 미수락 카드만 내린다.
+    /// </summary>
+    private void SyncWeeklyOffers(int day)
+    {
+        bool monday = Commission.IsAcceptanceDay(day);
+        if (monday && lastPostedDay == day) return;
+
+        // 비활성 상태에서 화요일을 건너뛰었더라도 지난주의 미수락 카드를 남기지 않는다.
+        for (int i = orders.Count - 1; i >= 0; i--)
+            if (orders[i].State == CommissionState.Available) RemoveCardAt(i);
+
+        if (!monday) return;
+        var batch = new List<Commission>(MaxOrders)
+        {
+            new Commission(equipmentData, startingLevel, targetLevel, advanceGold)
+        };
+        if (extraOrders != null)
+            foreach (var settings in extraOrders)
+            {
+                if (batch.Count == MaxOrders) break;
+                if (settings == null || settings.equipment == null)
+                    throw new InvalidOperationException("Extra Orders의 각 항목에 장비를 지정하세요.");
+                batch.Add(new Commission(settings.equipment, settings.start, settings.target, settings.advance));
+            }
+
+        for (int i = 0; i < batch.Count; i++)
+        {
+            var item = batch[i];
+            var card = Instantiate(cardPrefab, orderScroll.content);
+            card.Bind(this, item, i + 1);
+            orders.Add(item);
+            cards.Add(item, card);
+        }
+        lastPostedDay = day;
+    }
+
+    /// <summary>
+    /// 게시를 끝낸 카드와 목록 참조를 제거
+    /// 이 함수는 장비나 지갑을 변경하지 않음
+    /// </summary>
+    private void RemoveCardAt(int index)
+    {
+        var item = orders[index];
+        var card = cards[item];
+        if (commission == item) commission = null;
+        orders.RemoveAt(index);
+        cards.Remove(item);
+        card.gameObject.SetActive(false);
+        Destroy(card.gameObject);
+    }
+
+    private void OpenProgressTab() => ChangeTab(BoardTab.InProgress);
+    private void OpenAvailableTab() => ChangeTab(BoardTab.Available);
+    private bool IsVisibleInTab(Commission item) => item.State ==
+        (tab == BoardTab.InProgress ? CommissionState.InProgress : CommissionState.Available);
+
+    private void ChangeTab(BoardTab next)
+    {
+        if (!isWindowOpen || mode != SelectionMode.Normal || DeadlineActive) return;
+        tab = next;
+        if (messageText) messageText.text = string.Empty;
+        RefreshUI();
+        ScrollToFirstCard();
+    }
+
+    /// <summary>
+    /// 다른 탭이나 의뢰함을 열면 이전 목록의 스크롤 위치를 이어받지 않는다.
+    /// </summary>
+    private void ScrollToFirstCard()
+    {
+        Canvas.ForceUpdateCanvases();
+        orderScroll.StopMovement();
+        orderScroll.verticalNormalizedPosition = 1f;
+    }
+
+    private void OnDestroy()
+    {
+        if (inProgressTabButton) inProgressTabButton.onClick.RemoveListener(OpenProgressTab);
+        if (availableTabButton) availableTabButton.onClick.RemoveListener(OpenAvailableTab);
     }
 
     /// <summary>
@@ -114,7 +199,8 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     private bool SelectCard(Commission item)
     {
-        if (!isWindowOpen || DeadlineActive || mode != SelectionMode.Normal || !cards.ContainsKey(item)) return false;
+        if (!isWindowOpen || DeadlineActive || mode != SelectionMode.Normal || 
+            item == null || !cards.ContainsKey(item) || !IsVisibleInTab(item)) return false;
         commission = item;
         return true;
     }
@@ -125,10 +211,13 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     public void OnOpenWindowClicked()
     {
-        if (DeadlineActive) return; 
-        if (commission == null) return;
+        if (DeadlineActive) return;
+        if (!initialized || isWindowOpen) return;
+        tab = Commission.IsAcceptanceDay(calendarUI.Calendar.CurrentDay) &&
+             !orders.Exists(o => o.State == CommissionState.InProgress) ? BoardTab.Available : BoardTab.InProgress;
         isWindowOpen = true;
         RefreshUI();
+        ScrollToFirstCard();
     }
 
     /// <summary>
@@ -138,7 +227,7 @@ public class CommissionTestUI : MonoBehaviour
     public void OnCloseWindowClicked()
     {
         if (DeadlineActive) return;
-        if (commission == null) return;
+        if (!initialized) return;
         ResetSubmissionSelection();
         isWindowOpen = false;
         if (messageText != null) messageText.text = string.Empty;
@@ -148,7 +237,7 @@ public class CommissionTestUI : MonoBehaviour
     private void Update()
     {
         if (DeadlineActive) return;
-        if (commission == null || !isWindowOpen) return;
+        if (!initialized || !isWindowOpen) return;
 
         if (!Input.GetKeyDown(KeyCode.Escape)) return;
 
@@ -190,7 +279,7 @@ public class CommissionTestUI : MonoBehaviour
                 ShowMessage("의뢰를 수락했습니다. 장비와 선금을 받았습니다.");
                 inventoryUI.RefreshAfterCommissionChange();
                 break;
-            case CommissionAcceptResult.NotMonday: // [추가]
+            case CommissionAcceptResult.NotMonday:
                 ShowMessage("의뢰는 월요일에만 수락할 수 있습니다.");
                 break;
             case CommissionAcceptResult.InventoryFull:
@@ -255,6 +344,7 @@ public class CommissionTestUI : MonoBehaviour
     public void OpenAbandonmentConfirmation(EquipmentInstance equipment)
     {
         if (DeadlineActive) return;
+        if (commission == null || !isAbandoning || mode != SelectionMode.ChoosingEquipment) return;
         if (!commission.TryGetAbandonmentQuoto(inventory, wallet, equipment, out var quote))
         {
             ShowMessage("같은 종류의 장비 또는 흔적을 선택하세요. 완료 가능한 장비를 제출해 주세요.");
@@ -378,21 +468,33 @@ public class CommissionTestUI : MonoBehaviour
     private void RefreshUI()
     {
         commissionWindow.SetActive(isWindowOpen);
-        bool active = commission.State == CommissionState.InProgress;
+        bool active = commission != null && commission.State == CommissionState.InProgress;
+        bool canSwitch = mode == SelectionMode.Normal && !DeadlineActive;
+        inProgressTabButton.interactable = canSwitch && tab != BoardTab.InProgress;
+        availableTabButton.interactable = canSwitch && tab != BoardTab.Available;
+        int visible = 0;
+
         for (int i = orders.Count - 1; i >= 0; i--)
         {
             Commission item = orders[i];
             var card = cards[item];
-            if (item.State == CommissionState.Available || item.State == CommissionState.InProgress)
-                card.Render(mode == SelectionMode.Normal && !DeadlineActive, calendarUI.Calendar.CurrentDay);
-            else
+
+            if (item.State != CommissionState.Available && item.State != CommissionState.InProgress)
             {
-                orders.RemoveAt(i);
-                cards.Remove(item);
-                card.gameObject.SetActive(false);
-                Destroy(card.gameObject);
+                RemoveCardAt(i);
+                continue;
             }
+
+            bool show = IsVisibleInTab(item);
+            card.gameObject.SetActive(show);
+            if (!show) continue;
+            visible++;
+            card.Render(canSwitch, calendarUI.Calendar.CurrentDay);
         }
+        emptyListText.gameObject.SetActive(visible == 0);
+        if (visible == 0)
+            emptyListText.text = tab == BoardTab.InProgress ? "진행 중인 의뢰가 없습니다." :
+                Commission.IsAcceptanceDay(calendarUI.Calendar.CurrentDay) ? "수락 가능한 의뢰가 없습니다." : "의뢰는 월요일에만 수락할 수 있습니다.";
         abandonWithoutEquipmentButton.gameObject.SetActive(active && isAbandoning && mode == SelectionMode.ChoosingEquipment);
         cancleSelectionBtn.gameObject.SetActive(mode == SelectionMode.ChoosingEquipment);
         confirmationPopup.SetActive(isWindowOpen && mode == SelectionMode.Confirming);
@@ -429,7 +531,7 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
-        if (commission == null) return;
+        if (!initialized) return;
         ConnectCalendar();
         SetDeadlineView(deadlineView);
         OnCalendarDayChanged(calendarUI.Calendar.CurrentDay);
@@ -496,6 +598,9 @@ public class CommissionTestUI : MonoBehaviour
             }
             else if (order.TryMarkLastDayWarning(day)) warn = true;
         }
+
+        SyncWeeklyOffers(day);
+
         if (count == 0 && !warn)
         {
             RefreshUI();
@@ -532,7 +637,7 @@ public class CommissionTestUI : MonoBehaviour
     private void SetDeadlineView(DeadlineView next)
     {
         deadlineView = next;
-        foreach (var card in cards.Values) card.Render(mode == SelectionMode.Normal && !DeadlineActive, calendarUI.Calendar.CurrentDay);
+        RefreshUI();
         calendarUI.DayAdvanceBlocked = DeadlineActive;
         warningText.gameObject.SetActive(next == DeadlineView.Warning);
         noticeScroll.gameObject.SetActive(next == DeadlineView.Result);
