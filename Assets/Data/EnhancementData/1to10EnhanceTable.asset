@@ -10,81 +10,81 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 08e51774d32ed5d4bb8393601f972e08, type: 3}
-  m_Name: EnhancementTable_New
+  m_Name: 1to10EnhanceTable
   m_EditorClassIdentifier: Assembly-CSharp::EnhancementTable
   steps:
-  - goldCost: 10
+  - goldCost: 75
     successChance: 95
     destructionChance: 0
-  - goldCost: 15
+  - goldCost: 90
     successChance: 90
     destructionChance: 0
-  - goldCost: 20
+  - goldCost: 105
     successChance: 85
     destructionChance: 0
-  - goldCost: 25
+  - goldCost: 120
     successChance: 85
     destructionChance: 0
-  - goldCost: 30
+  - goldCost: 150
     successChance: 80
     destructionChance: 1
-  - goldCost: 40
+  - goldCost: 180
     successChance: 75
     destructionChance: 1
-  - goldCost: 50
+  - goldCost: 225
     successChance: 70
     destructionChance: 1
-  - goldCost: 65
+  - goldCost: 270
     successChance: 65
     destructionChance: 1
-  - goldCost: 80
+  - goldCost: 330
     successChance: 60
     destructionChance: 1
-  - goldCost: 100
+  - goldCost: 390
     successChance: 55
     destructionChance: 3
-  - goldCost: 150
+  - goldCost: 450
     successChance: 50
     destructionChance: 3
-  - goldCost: 200
+  - goldCost: 525
     successChance: 45
     destructionChance: 3
-  - goldCost: 250
+  - goldCost: 600
     successChance: 40
     destructionChance: 3
-  - goldCost: 300
+  - goldCost: 675
     successChance: 35
     destructionChance: 3
-  - goldCost: 400
+  - goldCost: 750
     successChance: 30
     destructionChance: 10
-  - goldCost: 500
+  - goldCost: 825
     successChance: 25
     destructionChance: 10
-  - goldCost: 650
+  - goldCost: 900
     successChance: 22.5
     destructionChance: 12.5
-  - goldCost: 800
+  - goldCost: 975
     successChance: 20
     destructionChance: 15
-  - goldCost: 1000
+  - goldCost: 1050
     successChance: 15
     destructionChance: 15
-  - goldCost: 1250
+  - goldCost: 1125
     successChance: 15
     destructionChance: 20
-  - goldCost: 1500
+  - goldCost: 1200
     successChance: 10
     destructionChance: 15
-  - goldCost: 1750
+  - goldCost: 1275
     successChance: 5
     destructionChance: 15
-  - goldCost: 2000
+  - goldCost: 1350
     successChance: 5
     destructionChance: 17.5
-  - goldCost: 2250
+  - goldCost: 1425
     successChance: 3
     destructionChance: 17.5
-  - goldCost: 2500
+  - goldCost: 1500
     successChance: 1
     destructionChance: 20

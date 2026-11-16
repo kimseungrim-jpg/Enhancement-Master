@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ba82638b9bbabe4fab388acee194946, type: 3}
   m_Name: Iron_Sword
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentData
-  equipmentId: 1001
+  equipmentId: 1002
   displayName: "\uCCA0\uAC80"
   equipmentType: 0
   icon: {fileID: 0}
   baseAttack: 10
   enhancementTable: {fileID: 11400000, guid: 12b7fba99fb61b841b44ec6713dd2e7b, type: 2}
+  basePrice: 200
