@@ -6,7 +6,7 @@ using System;
 /// </summary>
 public class GoldWallet
 {
-    public int Gold { get; private set; }
+    public long Gold { get; private set; }
 
     public long Debt { get; private set; }
 
@@ -35,16 +35,16 @@ public class GoldWallet
     {
         if(!CanSettle(amount)) return false;
         if (amount <= Gold)
-            Gold -= (int)amount;
+            Gold -= amount;
         else
             AddDebt(amount);
         return true;
     }
 
     /// <summary>
-    /// EnhancementTestUI.Awake에서 테스트 지갑을 만들 때 시작 골드를 설정
+    /// EnhancementTestUI가 지갑을 만들 때 시작 골드를 설정
     /// </summary
-    public GoldWallet(int startingGold)
+    public GoldWallet(long startingGold)
     {
         if(startingGold < 0)
             throw new ArgumentOutOfRangeException(nameof(startingGold));
@@ -56,7 +56,7 @@ public class GoldWallet
     /// EnhancementService.TryEnhance에서 비용 지불을 요청할 때 호출
     /// 잔액이 충분하면 차감 후 true, 부족하면 잔액을 유지하고 false를 반환
     /// </summary>
-    public bool TrySpend(int amount)
+    public bool TrySpend(long amount)
     {
         if(amount < 0)
             throw new ArgumentOutOfRangeException(nameof(amount));
@@ -71,7 +71,7 @@ public class GoldWallet
     /// <summary>
     /// EnhancementTestUI의 골드 추가 버튼에서 호출하여 잔액을 늘린다.
     /// </summary>
-    public void AddGold(int amount)
+    public void AddGold(long amount)
     {
         if(amount < 0)
             throw new ArgumentOutOfRangeException(nameof(amount));

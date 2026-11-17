@@ -8,10 +8,8 @@ using System;
 public class EnhancementExperctedCost
 {
     /// <summary>
-    /// Commission.TryAccept에서 수락 당시 확률/비용으로 누적 기대비용 표를 만든다.
+    /// 의뢰 생성과 수락 정산에 사용할 단계별 누적 기대비용을 만든다.
     /// </summary>
-    /// <param name="data"></param>
-    /// <returns></returns>
     public static decimal[] Build(EquipmentData data)
     {
         if (data == null || data.EnhancementTable == null)
@@ -26,7 +24,9 @@ public class EnhancementExperctedCost
             decimal success = (decimal)step.SuccessChance / 100m;
             decimal destruction = (decimal)step.DestructionChance / 100m;
 
-            costs[i + 1] = checked(costs[i] + (step.GoldCost + destruction + (data.BasePrice + costs[i])) / success);
+            decimal rebuildCost = data.BasePrice + costs[i];
+            decimal nextStepCost = (step.GoldCost + destruction * rebuildCost) / success;
+            costs[i + 1] = checked(costs[i] + nextStepCost);
         }
 
         return costs;

@@ -13,6 +13,7 @@ public class CommissionTestUI : MonoBehaviour
 {
     private enum SelectionMode { Normal, ChoosingEquipment, Confirming }
 
+    // 탭은 표시 조건, 수락 여부는 각 Commission.State가 관리
     private enum BoardTab { InProgress, Available }
     private BoardTab tab;
     private int lastPostedDay;
@@ -23,26 +24,17 @@ public class CommissionTestUI : MonoBehaviour
     [SerializeField] private Button availableTabButton;
     [SerializeField] private TMP_Text emptyListText;
 
-    [Header("테스트 의뢰 조건")]
-    [SerializeField] private EquipmentData equipmentData;
-    [Range(0, 24)][SerializeField] private int startingLevel;
-    [Range(1, 24)][SerializeField] private int targetLevel = 3;
-    [Min(0)][SerializeField] private int advanceGold = 1000;
+    [Header("랜덤 의뢰")]
+    [SerializeField] private List<EquipmentData> equipmentCandidates = new List<EquipmentData>();
+    [Range(0, CommissionGenerator.MaxCommissionTargetLevel - 1)]
+    [SerializeField] private int maxStartingLevel = CommissionGenerator.MaxCommissionTargetLevel - 1;
+    [Range(1, CommissionGenerator.MaxCommissionTargetLevel)]
+    [SerializeField] private int maxLevelIncrease = CommissionGenerator.MaxCommissionTargetLevel;
+    [SerializeField] private Button refreshButton;
+    [SerializeField] private TMP_Text refreshButtonText;
+    private CommissionGenerator generator;
+    private bool refreshUsed;
 
-    /// <summary>
-    /// 추가 의뢰를 Inspector에서 설정한다. 각 항목은 별도의 진행 상태를 갖는다.
-    /// </summary>
-    [Serializable]
-    private class ExtraOrder
-    {
-        public EquipmentData equipment;
-        [Range(0, 24)] public int start;
-        [Range(1, 25)] public int target = 3;
-        [Min(0)] public int advance = 1000;
-    }
-
-    //목록이 비어 있으면 지금처럼 한 건만 사용
-    [SerializeField] private ExtraOrder[] extraOrders;
     private readonly List<Commission> orders = new List<Commission>();
 
     [Header("의뢰창")]
@@ -93,6 +85,10 @@ public class CommissionTestUI : MonoBehaviour
         if (!inProgressTabButton || !availableTabButton || inProgressTabButton == availableTabButton || !emptyListText)
             throw new InvalidOperationException("진행 중·수락 가능 버튼과 빈 목록 안내 텍스트를 연결하세요.");
 
+        if (!refreshButton || !refreshButtonText || refreshButton == inProgressTabButton || refreshButton == availableTabButton)
+            throw new InvalidOperationException("별도의 새로고침 버튼과 그 버튼의 TMP 텍스트를 연결하세요.");
+        generator = new CommissionGenerator(equipmentCandidates, maxStartingLevel, maxLevelIncrease);
+
         ValidateDeadlineUI();
         inventoryUI = owner;
         inventory = equipmentInventory;
@@ -102,6 +98,7 @@ public class CommissionTestUI : MonoBehaviour
         initialized = true;
         inProgressTabButton.onClick.AddListener(OpenProgressTab);
         availableTabButton.onClick.AddListener(OpenAvailableTab);
+        refreshButton.onClick.AddListener(OnRefreshClicked);
         mode = SelectionMode.Normal;
 
         if (isActiveAndEnabled) ConnectCalendar();
@@ -116,27 +113,47 @@ public class CommissionTestUI : MonoBehaviour
     /// </summary>
     private void SyncWeeklyOffers(int day)
     {
-        bool monday = Commission.IsAcceptanceDay(day);
-        if (monday && lastPostedDay == day) return;
-
-        // 비활성 상태에서 화요일을 건너뛰었더라도 지난주의 미수락 카드를 남기지 않는다.
-        for (int i = orders.Count - 1; i >= 0; i--)
-            if (orders[i].State == CommissionState.Available) RemoveCardAt(i);
-
-        if (!monday) return;
-        var batch = new List<Commission>(MaxOrders)
+        if (!Commission.IsAcceptanceDay(day))
         {
-            new Commission(equipmentData, startingLevel, targetLevel, advanceGold)
-        };
-        if (extraOrders != null)
-            foreach (var settings in extraOrders)
-            {
-                if (batch.Count == MaxOrders) break;
-                if (settings == null || settings.equipment == null)
-                    throw new InvalidOperationException("Extra Orders의 각 항목에 장비를 지정하세요.");
-                batch.Add(new Commission(settings.equipment, settings.start, settings.target, settings.advance));
-            }
+            RemoveAvailableOffers();
+            return;
+        }
+        if (lastPostedDay == day) return;
+        ReplaceAvailableOffers(MaxOrders);
+        lastPostedDay = day;
+        refreshUsed = false;
+    }
 
+    /// 
+    /// <summary>새로고침 버튼을 누르면 아직 수락하지 않은 의뢰 수만큼 다시 뽑는다.
+    /// </summary>
+    private void OnRefreshClicked()
+    {
+        if (!CanRefresh()) return;
+        int remaining = 0;
+        foreach (var order in orders)
+            if (order.State == CommissionState.Available) remaining++;
+        ReplaceAvailableOffers(remaining);
+        refreshUsed = true;
+        ShowMessage("남아 있던 의뢰를 새로고침했습니다.");
+        RefreshUI();
+        ScrollToFirstCard();
+    }
+
+    private bool CanRefresh() => initialized && isWindowOpen && tab == BoardTab.Available &&
+        mode == SelectionMode.Normal && !DeadlineActive && !refreshUsed &&
+        Commission.IsAcceptanceDay(calendarUI.Calendar.CurrentDay) &&
+        orders.Exists(o => o.State == CommissionState.Available);
+
+    /// <summary>
+    /// 월요일 목록을 만들거나 교체할 때 호출한다. 
+    /// 새 조건을 모두 계산한 뒤 기존 미수락 카드만 내린다.
+    /// </summary>
+    private void ReplaceAvailableOffers(int count)
+    {
+        var batch = new List<Commission>(count);
+        for (int i = 0; i < count; i++) batch.Add(generator.Generate());
+        RemoveAvailableOffers();
         for (int i = 0; i < batch.Count; i++)
         {
             var item = batch[i];
@@ -145,7 +162,12 @@ public class CommissionTestUI : MonoBehaviour
             orders.Add(item);
             cards.Add(item, card);
         }
-        lastPostedDay = day;
+    }
+
+    private void RemoveAvailableOffers()
+    {
+        for (int i = orders.Count - 1; i >= 0; i--)
+            if (orders[i].State == CommissionState.Available) RemoveCardAt(i);
     }
 
     /// <summary>
@@ -189,6 +211,7 @@ public class CommissionTestUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (refreshButton) refreshButton.onClick.RemoveListener(OnRefreshClicked);
         if (inProgressTabButton) inProgressTabButton.onClick.RemoveListener(OpenProgressTab);
         if (availableTabButton) availableTabButton.onClick.RemoveListener(OpenAvailableTab);
     }
@@ -472,6 +495,10 @@ public class CommissionTestUI : MonoBehaviour
         bool canSwitch = mode == SelectionMode.Normal && !DeadlineActive;
         inProgressTabButton.interactable = canSwitch && tab != BoardTab.InProgress;
         availableTabButton.interactable = canSwitch && tab != BoardTab.Available;
+        bool monday = Commission.IsAcceptanceDay(calendarUI.Calendar.CurrentDay);
+        refreshButton.gameObject.SetActive(isWindowOpen && tab == BoardTab.Available && monday);
+        refreshButton.interactable = CanRefresh();
+        refreshButtonText.text = refreshUsed ? "새로고침 (0/1)" : "새로고침 (1/1)";
         int visible = 0;
 
         for (int i = orders.Count - 1; i >= 0; i--)

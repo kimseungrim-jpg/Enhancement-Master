@@ -20,16 +20,16 @@ public class Commission
     public EquipmentData EquipmentData { get; }
     public int StartingLevel { get; }
     public int TargetLevel { get; }
-    public int AdvanceGold { get; }
+    public long AdvanceGold { get; }
     public CommissionState State { get; private set; }
     private readonly string requiredEquipmentId;
     private decimal[] expectedCosts;
     private int acceptedBasePrice;
 
     /// <summary>
-    /// CommissionTestUI.Initialize에서 테스트 의뢰를 만들 때 조건을 설정
+    /// CommissionGenerator.Generate()가 뽑은 장비, 시작 단계, 목표 단계와 선금을 저장
     /// </summary>
-    public Commission(EquipmentData data, int startingLevel, int targetLevel, int advanceGold)
+    public Commission(EquipmentData data, int startingLevel, int targetLevel, long advanceGold)
     {
         if (data == null) throw new ArgumentNullException(nameof(data));
         if (string.IsNullOrWhiteSpace(data.EquipmentId) || data.EnhancementTable == null)
@@ -61,16 +61,20 @@ public class Commission
         if (currentDay < 1) throw new ArgumentOutOfRangeException(nameof(currentDay));
         if (!IsAcceptanceDay(currentDay)) return CommissionAcceptResult.NotMonday;
 
-        if (AdvanceGold > int.MaxValue - wallet.Gold)
+        if (AdvanceGold > long.MaxValue - wallet.Gold)
             return CommissionAcceptResult.GoldLimitReached;
 
         int expiry = checked(currentDay + DurationDays);
         decimal[] costs = EnhancementExperctedCost.Build(EquipmentData);
-        long maximum = checked((long)decimal.Round(EquipmentData.BasePrice + costs[StartingLevel] + AdvanceGold, 0, MidpointRounding.AwayFromZero));
+        decimal maximum = decimal.Round(
+        EquipmentData.BasePrice + costs[StartingLevel] + AdvanceGold, 0, MidpointRounding.AwayFromZero);
+
+        if (maximum > long.MaxValue)
+            return CommissionAcceptResult.GoldLimitReached;
         EquipmentInstance equipment = new EquipmentInstance(EquipmentData, StartingLevel);
         if (!inventory.TryAdd(equipment)) return CommissionAcceptResult.InventoryFull;
 
-        MaximumRecoveryGold = maximum;
+        MaximumRecoveryGold = (long)maximum;
         AcceptedDay = currentDay;
         ExpiryDay = expiry;
         expectedCosts = costs;
